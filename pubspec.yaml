@@ -1,0 +1,36 @@
+name: gemini_tts_wrapper
+description: One-shot Gemini TTS REST client for Flutter that returns audio bytes (Uint8List) and includes an in-memory just_audio source.
+version: 0.1.0
+
+repository: https://github.com/mehmetfiskindal/gemini_tts_wrapper
+
+topics:
+  - tts
+  - gemini
+  - audio
+  - google
+  - flutter
+
+platforms:
+  android:
+  ios:
+  web:
+  macos:
+  windows:
+  linux:
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.41.0"
+
+dependencies:
+  dio: ^5.8.0
+  flutter:
+    sdk: flutter
+  just_audio: ^0.10.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  very_good_analysis: ^10.2.0
