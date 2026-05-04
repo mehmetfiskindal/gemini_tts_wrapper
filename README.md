@@ -31,6 +31,8 @@ flutter pub add gemini_tts_wrapper
 
 ## Usage
 
+### Basic Usage
+
 Generate one-shot TTS audio bytes:
 
 ```dart
@@ -44,6 +46,20 @@ final bytes = await tts.generate(
 );
 ```
 
+### Advanced Options
+
+```dart
+final bytes = await tts.generate(
+  text: 'Your text here',
+  voice: 'aoide',  // 'aoide', 'charon', or 'puck'
+  responseMimeType: 'audio/wav',
+  audioProfile: 'headphone',  // May not work in all languages
+  directorsNote: 'Speak in a casual, natural tone',  // May be ignored
+);
+```
+
+### Play Audio
+
 Play in-memory bytes with `just_audio`:
 
 ```dart
@@ -55,6 +71,73 @@ await player.setAudioSource(Uint8ListAudioSource(bytes, contentType: 'audio/wav'
 await player.play();
 ```
 
+### Dialogue/Multi-Speaker Support
+
+To work around voice mixing issues in dialogues, use the `DialogueBuilder`:
+
+```dart
+final builder = DialogueBuilder(
+  context: 'A conversation at a coffee shop',
+  speakers: {
+    'Alice': SpeakerConfig(name: 'Alice', voice: 'aoide'),
+    'Bob': SpeakerConfig(name: 'Bob', voice: 'charon'),
+  },
+);
+
+builder.addLines([
+  DialogueLine(speaker: 'Alice', text: 'Hey Bob!'),
+  DialogueLine(
+    speaker: 'Bob',
+    text: 'Hi Alice!',
+    pausesBefore: ['medium pause'],  // [short pause] may not work
+  ),
+]);
+
+final generator = DialogueGenerator(tts: tts);
+final audioSegments = await generator.generatePerSpeaker(builder);
+```
+
+### Text Length Validation
+
+The wrapper includes validation to warn about the ~160 second audio limit:
+
+```dart
+final result = TtsValidator.validateTextLength(longText);
+if (!result.isValid) {
+  print('Warning: ${result.message}');
+  // Split into chunks
+  final chunks = TtsValidator.splitIntoChunks(longText);
+}
+```
+
+## Known API Limitations (Gemini 3.1 Flash TTS Preview)
+
+⚠️ **Important:** The Gemini 3.1 Flash TTS API has several known limitations:
+
+### 1. ~160 Second Audio Hard Limit
+- The API accepts unlimited text input but hard-stops audio generation around 160 seconds
+- This wrapper validates text length and throws `TtsLengthException` if the estimated duration exceeds safe limits
+- Use `TtsValidator.splitIntoChunks()` to split long text into manageable segments
+
+### 2. Voice Mixing in Dialogues
+- Speakers frequently read each other's lines (non-deterministic behavior)
+- **Workaround**: Use `DialogueGenerator.generatePerSpeaker()` to generate each speaker's lines separately
+- The example app demonstrates this approach
+
+### 3. Audio Profile & Director's Note
+- These parameters may not work consistently, especially in non-English languages (e.g., Finnish)
+- Voices may default to dramatic/fake tones even when casual/natural is requested
+- These options are available but your mileage may vary
+
+### 4. Pause Tags
+- `[short pause]` tags are often ignored by the API
+- **Workaround**: Use `[medium pause]` or `[long pause]` instead
+- The `DialogueLine` class includes helper properties for adding pauses
+
+### 5. Chunking Required for Long Content
+- For content longer than ~160 seconds of audio, you must implement chunking
+- The wrapper provides `TtsValidator` utilities to help estimate and split content appropriately
+
 ## Example App
 
 Run the included example:
@@ -63,6 +146,11 @@ Run the included example:
 cd example
 flutter run
 ```
+
+The example includes:
+- Basic TTS generation with all available options
+- Text length validation with warnings
+- A complete dialogue demo showing multi-speaker support
 
 ---
 
